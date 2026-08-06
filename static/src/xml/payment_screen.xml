@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'center-content')]//t[@t-call='point_of_sale.PaymentScreenDue']" position="after">
+            <t t-call="la_leona_pos_multicurrency.MulticurrencyPanel"/>
+        </xpath>
+        <xpath expr="//t[@t-if='ui.isSmall']/div/t[@t-call='point_of_sale.PaymentScreenDue']" position="after">
+            <t t-call="la_leona_pos_multicurrency.MulticurrencyPanel"/>
+        </xpath>
+    </t>
+
+    <t t-name="la_leona_pos_multicurrency.MulticurrencyPanel">
+        <section t-if="mcState.enabled and mcState.ready" class="ll-mc-card bg-view rounded-3 p-3">
+            <div class="ll-mc-header">
+                <div>
+                    <div class="ll-mc-kicker">LA LEONA · MULTIMONEDA</div>
+                    <div class="ll-mc-title">Cobro y vuelto CRC / USD</div>
+                </div>
+                <span class="ll-mc-rate" t-if="isForeignPaymentSelected()">
+                    1 <t t-esc="selectedMethodCurrency().name"/> =
+                    <t t-esc="env.utils.formatCurrency(selectedMethodCurrency().company_per_unit)"/>
+                </span>
+            </div>
+
+            <div t-if="isForeignPaymentSelected()" class="ll-mc-payment-grid mt-3">
+                <div class="ll-mc-field">
+                    <label>Monto recibido en <t t-esc="selectedMethodCurrency().name"/></label>
+                    <div class="ll-mc-input-wrap">
+                        <span t-esc="selectedMethodCurrency().symbol"/>
+                        <input type="number" min="0" step="0.01" t-att-value="mcState.foreignAmount" t-on-input="onForeignAmountInput" t-on-keydown.enter="applyForeignPayment"/>
+                    </div>
+                </div>
+                <button class="btn btn-primary ll-mc-apply" t-on-click="applyForeignPayment">
+                    <i class="fa fa-check-circle me-2"/>Aplicar pago
+                </button>
+                <div class="ll-mc-due">
+                    Pendiente: <strong t-esc="formatForeign(selectedMethodCurrency(), dueInCurrency(selectedMethodCurrency()))"/>
+                </div>
+            </div>
+
+            <div t-if="currentChangeCompany() &gt; 0" class="ll-mc-change mt-3">
+                <div class="ll-mc-change-title">¿En qué moneda se entrega el vuelto?</div>
+                <div class="ll-mc-currency-buttons">
+                    <button t-foreach="mcState.currencies" t-as="currency" t-key="currency.id"
+                            class="btn ll-mc-currency"
+                            t-att-class="mcState.changeCurrencyId === currency.id ? 'btn-primary active' : 'btn-light'"
+                            t-on-click="() => chooseChangeCurrency(currency.id)">
+                        <span class="ll-mc-symbol" t-esc="currency.symbol"/>
+                        <span t-esc="currency.name"/>
+                        <strong t-esc="formatForeign(currency, currentChangeCompany() / currency.company_per_unit)"/>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </t>
+
+    <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//*[contains(@class, 'info-list')]" position="inside">
+            <li t-if="line.multicurrencyPrice" class="price-per-unit ll-mc-line-price">
+                Precio comercial: <strong t-esc="line.multicurrencyPrice"/>
+            </li>
+        </xpath>
+    </t>
+</templates>

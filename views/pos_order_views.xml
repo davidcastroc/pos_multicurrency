@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_order_form_multicurrency" model="ir.ui.view">
+        <field name="name">pos.order.form.multicurrency</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Multimoneda" name="multicurrency">
+                    <group>
+                        <field name="change_currency_id"/>
+                        <field name="change_amount_currency"/>
+                        <field name="change_amount_company"/>
+                        <field name="exchange_rate_snapshot"/>
+                    </group>
+                    <field name="payment_ids">
+                        <list create="0" delete="0" edit="0">
+                            <field name="payment_method_id"/>
+                            <field name="payment_currency_id"/>
+                            <field name="amount_currency"/>
+                            <field name="amount"/>
+                            <field name="exchange_rate_snapshot"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
