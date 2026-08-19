@@ -7,28 +7,18 @@ class PosPaymentMethod(models.Model):
     _inherit = "pos.payment.method"
 
     payment_currency_id = fields.Many2one(
-        "res.currency",
-        string="Moneda recibida",
-        help="Moneda física o bancaria recibida por este método. Si se deja vacía se usa la moneda de la compañía.",
+        "res.currency", string="Moneda recibida", domain=[("active", "=", True)],
+        help="Moneda física o bancaria de este método. Vacío = moneda de la compañía.",
     )
-    is_foreign_cash = fields.Boolean(
-        string="Efectivo en moneda extranjera",
-        help="Actívelo únicamente cuando este método representa efectivo físico en otra moneda.",
-    )
-    allow_change_in_currency = fields.Boolean(
-        string="Permitir dar vuelto en esta moneda",
-        default=False,
-    )
+    allow_change_in_currency = fields.Boolean(string="Permitir vuelto en esta moneda", default=True)
 
-    @api.constrains("is_foreign_cash", "payment_currency_id")
-    def _check_foreign_cash_currency(self):
+    @api.constrains("payment_currency_id", "is_cash_count")
+    def _check_payment_currency(self):
         for method in self:
-            if method.is_foreign_cash and not method.payment_currency_id:
-                raise ValidationError("Seleccione la moneda recibida para el método de efectivo extranjero.")
+            if method.payment_currency_id and not method.payment_currency_id.active:
+                raise ValidationError("La moneda del método de pago debe estar activa.")
 
+    @api.model
     def _load_pos_data_fields(self, config_id):
         fields_list = super()._load_pos_data_fields(config_id)
-        for field_name in ["payment_currency_id", "is_foreign_cash", "allow_change_in_currency"]:
-            if field_name not in fields_list:
-                fields_list.append(field_name)
-        return fields_list
+        return list(dict.fromkeys(fields_list + ["payment_currency_id", "allow_change_in_currency"]))

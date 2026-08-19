@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="pos_session_form_multicurrency" model="ir.ui.view">
-        <field name="name">pos.session.form.multicurrency</field>
-        <field name="model">pos.session</field>
-        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="action_refresh_currency_summary" type="object" string="Actualizar monedas" class="btn-secondary"/>
-            </xpath>
-            <xpath expr="//sheet/notebook" position="inside">
-                <page string="Cierre por moneda" name="currency_closing">
-                    <field name="currency_summary_ids" nolabel="1">
-                        <list create="0" delete="0" edit="0">
-                            <field name="currency_id"/>
-                            <field name="amount_received" sum="Total recibido"/>
-                            <field name="change_given" sum="Total vuelto"/>
-                            <field name="net_amount" sum="Neto esperado"/>
-                            <field name="company_currency_amount" sum="Equivalente"/>
-                        </list>
-                    </field>
-                </page>
-            </xpath>
-        </field>
-    </record>
+  <record id="pos_session_form_multicurrency" model="ir.ui.view">
+    <field name="name">pos.session.form.multicurrency</field>
+    <field name="model">pos.session</field>
+    <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside"><button name="action_refresh_currency_summary" type="object" string="Actualizar arqueo por moneda" class="btn-secondary"/></xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="Arqueo físico por moneda">
+          <field name="currency_summary_ids" nolabel="1" colspan="2">
+            <list create="0" delete="0" edit="0">
+              <field name="currency_id"/><field name="amount_received" sum="Recibido"/>
+              <field name="change_given" sum="Vuelto"/><field name="net_amount" sum="Neto"/>
+              <field name="company_currency_amount" sum="Equivalente contable"/>
+            </list>
+          </field>
+        </group>
+      </xpath>
+    </field>
+  </record>
 </odoo>

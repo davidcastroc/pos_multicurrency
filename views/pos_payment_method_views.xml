@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="pos_payment_method_form_multicurrency" model="ir.ui.view">
-        <field name="name">pos.payment.method.form.multicurrency</field>
-        <field name="model">pos.payment.method</field>
-        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//sheet/group" position="inside">
-                <group string="Multimoneda">
-                    <field name="payment_currency_id" options="{'no_create': True}"/>
-                    <field name="is_foreign_cash"/>
-                    <field name="allow_change_in_currency"/>
-                </group>
-            </xpath>
-        </field>
-    </record>
+  <record id="pos_payment_method_form_multicurrency" model="ir.ui.view">
+    <field name="name">pos.payment.method.form.multicurrency</field>
+    <field name="model">pos.payment.method</field>
+    <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="inside">
+        <group string="Moneda del método de pago">
+          <field name="payment_currency_id" options="{'no_create': True}"/>
+          <field name="allow_change_in_currency"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
 </odoo>
