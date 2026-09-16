@@ -5,9 +5,20 @@
     <field name="model">pos.session</field>
     <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
     <field name="arch" type="xml">
-      <xpath expr="//header" position="inside"><button name="action_refresh_currency_summary" type="object" string="Actualizar arqueo por moneda" class="btn-secondary"/></xpath>
+      <xpath expr="//header" position="inside">
+        <button name="action_refresh_currency_summary" type="object" string="Actualizar arqueo por moneda" class="btn-secondary"/>
+      </xpath>
       <xpath expr="//sheet" position="inside">
-        <group string="Arqueo físico por moneda">
+        <group string="Caja física por moneda">
+          <field name="currency_balance_ids" nolabel="1" colspan="2">
+            <list create="0" delete="0" edit="0">
+              <field name="currency_id"/><field name="opening_amount"/><field name="opening_exchange_rate"/>
+              <field name="cash_in_amount"/><field name="cash_out_amount"/>
+              <field name="closing_counted_amount"/><field name="closing_exchange_rate"/>
+            </list>
+          </field>
+        </group>
+        <group string="Ventas y cobros por moneda">
           <field name="currency_summary_ids" nolabel="1" colspan="2">
             <list create="0" delete="0" edit="0">
               <field name="currency_id"/><field name="amount_received" sum="Recibido"/>

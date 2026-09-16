@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="pos_multicurrency.ClosePosPopupMulticurrency"
+       t-inherit="point_of_sale.ClosePosPopup"
+       t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('payment-methods-overview')]" position="before">
+            <section t-if="props.multicurrency_summary and props.multicurrency_summary.enabled and (props.multicurrency_summary.methods.length or props.multicurrency_summary.currencies.length)"
+                     class="ll-mc-closing-card mb-4 p-3 rounded-3">
+
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <div class="ll-mc-kicker">CIERRE MULTIMONEDA</div>
+                        <div class="fs-4 fw-bold">Arqueo físico por moneda</div>
+                        <div class="text-muted small">
+                            Cantidad física esperada por moneda, separada del equivalente contable.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ll-mc-closing-currencies">
+                    <div t-foreach="props.multicurrency_summary.currencies"
+                         t-as="currency"
+                         t-key="currency.currency_id"
+                         class="ll-mc-closing-currency rounded-3 p-3">
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <strong class="fs-5">
+                                <t t-esc="currency.currency_name"/>
+                            </strong>
+                            <span class="ll-mc-closing-net"
+                                  t-esc="currency.net_display"/>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="text-muted">Recibido</span>
+                            <strong t-esc="currency.received_display"/>
+                        </div>
+
+                        <div class="d-flex justify-content-between"
+                             t-if="currency.change">
+                            <span class="text-muted">Vuelto entregado</span>
+                            <strong>
+                                - <t t-esc="currency.change_display"/>
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                            <span class="fw-bold">Neto físico esperado</span>
+                            <strong t-esc="currency.net_display"/>
+                        </div>
+
+                        <div t-if="!currency.is_company_currency"
+                             class="d-flex justify-content-between small text-muted mt-1">
+                            <span>Equivalente contable recibido</span>
+                            <span t-esc="currency.company_equivalent_display"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <div class="fw-bold mb-2">Detalle por método de pago</div>
+
+                    <div t-foreach="props.multicurrency_summary.methods"
+                         t-as="method"
+                         t-key="method.id"
+                         class="ll-mc-closing-method d-flex justify-content-between align-items-center py-2 border-top">
+
+                        <div>
+                            <div class="fw-semibold" t-esc="method.name"/>
+                            <small class="text-muted">
+                                <t t-esc="method.currency_name"/>
+                                <t t-if="!method.is_cash"> · no efectivo</t>
+                            </small>
+                        </div>
+
+                        <div class="text-end">
+                            <div class="fw-bold"
+                                 t-esc="method.received_display"/>
+                            <small t-if="method.currency_name !== props.multicurrency_summary.company_currency.name"
+                                   class="text-muted">
+                                ≈ <t t-esc="method.company_equivalent_display"/>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </xpath>
+
+    </t>
+
+</templates>

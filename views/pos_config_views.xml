@@ -23,6 +23,7 @@
               </field>
               <field name="show_native_product_prices"/>
               <field name="show_company_equivalent"/>
+              <button name="action_install_cr_payment_methods" type="object" string="Crear/asignar métodos de pago Costa Rica" class="btn btn-primary mt16"/>
             </div>
           </div>
         </div>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+
+        <xpath expr="//div[contains(@class, 'pos-receipt-taxes')]" position="replace">
+            <t t-if="props.data.mc?.singleNative">
+                <div class="ll-mc-receipt-summary">
+                    <div class="d-flex">
+                        <span>Subtotal</span>
+                        <strong class="ms-auto" t-esc="props.data.mc.untaxedDisplay"/>
+                    </div>
+                    <div class="d-flex">
+                        <span>Impuestos</span>
+                        <strong class="ms-auto" t-esc="props.data.mc.taxDisplay"/>
+                    </div>
+                </div>
+            </t>
+            <div t-else="" t-if="taxTotals and taxTotals.has_tax_groups" class="pos-receipt-taxes">
+                <div class="text-center">--------------------------------</div>
+                <t t-foreach="taxTotals.subtotals" t-as="subtotal" t-key="subtotal.name">
+                    <div class="d-flex">
+                        <span t-if="showTaxGroupLabels" class="me-2" style="visibility: hidden;">A</span>
+                        <span class="fw-bolder text-nowrap mw-100" t-out="subtotal.name"/>
+                        <span t-esc="props.formatCurrency(subtotal.base_amount_currency)" class="ms-auto"/>
+                    </div>
+                    <div t-foreach="subtotal.tax_groups" t-as="tax_group" t-key="tax_group.id" class="d-flex">
+                        <span>
+                            <span t-esc="tax_group.group_name"/>
+                        </span>
+                        <span t-esc="props.formatCurrency(tax_group.tax_amount_currency)" class="ms-auto"/>
+                    </div>
+                </t>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'receipt-total')]" position="replace">
+            <div class="pos-receipt-amount receipt-total">
+                <t t-out="props.data.label_total"/>
+                <span t-if="props.data.mc?.singleNative"
+                      t-esc="props.data.mc.totalDisplay"
+                      class="pos-receipt-right-align"/>
+                <span t-else=""
+                      t-esc="props.formatCurrency(taxTotals.order_sign * taxTotals.order_total)"
+                      class="pos-receipt-right-align"/>
+            </div>
+            <div t-if="props.data.mc?.singleNative"
+                 class="ll-mc-receipt-equivalent text-muted">
+                Equivalente contable:
+                <span class="pos-receipt-right-align"
+                      t-esc="props.data.mc.companyEquivalentDisplay"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'paymentlines')]" position="replace">
+            <div class="paymentlines text-start"
+                 t-foreach="props.data.paymentlines"
+                 t-as="line"
+                 t-key="line_index">
+                <t t-esc="line.name"/>
+                <span t-if="line.mc_display"
+                      t-esc="line.mc_display"
+                      class="pos-receipt-right-align"/>
+                <span t-else=""
+                      t-esc="props.formatCurrency(line.amount)"
+                      class="pos-receipt-right-align"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'receipt-change')]" position="replace">
+            <div t-if="props.data.show_change"
+                 class="pos-receipt-amount receipt-change">
+                <t t-out="props.data.label_change"/>
+                <span t-if="props.data.mc?.changeDisplay"
+                      t-esc="props.data.mc.changeDisplay"
+                      class="pos-receipt-right-align"/>
+                <span t-else=""
+                      t-esc="props.formatCurrency(props.data.order_change)"
+                      class="pos-receipt-right-align"/>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>

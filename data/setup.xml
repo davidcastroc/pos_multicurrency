@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Intencionalmente vacío: no se crean diarios/métodos durante la carga del módulo. -->
+</odoo>

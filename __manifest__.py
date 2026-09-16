@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "La Leona | POS Multimoneda",
-    "version": "18.0.1.1.1",
+    "version": "18.0.2.0.0",
     "summary": "Productos, cobros, vuelto y cierres de caja en CRC y USD para Punto de Venta.",
     "category": "Point of Sale",
     "author": "Castro Li",
@@ -28,9 +28,11 @@
             "pos_multicurrency/static/src/js/multicurrency_models.js",
             "pos_multicurrency/static/src/js/order_summary_multicurrency.js",
             "pos_multicurrency/static/src/js/payment_screen.js",
+            "pos_multicurrency/static/src/js/cash_controls.js",
 
             "pos_multicurrency/static/src/xml/order_summary_multicurrency.xml",
             "pos_multicurrency/static/src/xml/payment_screen.xml",
+            "pos_multicurrency/static/src/xml/cash_controls.xml",
 
             "pos_multicurrency/static/src/scss/multicurrency.scss",
         ],

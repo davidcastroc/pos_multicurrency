@@ -253,3 +253,36 @@ patch(PosOrderline.prototype, {
     return data;
 },
 });
+
+// Payment/order metadata is stored on real Odoo relational records through update().
+// Never attach plain objects to relational fields: doing so breaks getIndexMaps()/syncAllOrders.
+import { PosPayment } from "@point_of_sale/app/models/pos_payment";
+import { PosOrder } from "@point_of_sale/app/models/pos_order";
+
+patch(PosPayment.prototype, {
+    setForeignAmount(currency, nativeAmount, companyPerUnit) {
+        const rate = Number(companyPerUnit || 0);
+        const native = Number(nativeAmount || 0);
+        if (!(rate > 0) || !(native >= 0)) return;
+        const currencyId = relationId(currency);
+        this.update({
+            payment_currency_id: currencyId,
+            amount_currency: native,
+            exchange_rate_snapshot: rate,
+            amount: native * rate,
+        });
+    },
+});
+
+patch(PosOrder.prototype, {
+    setMulticurrencyChange(currency, nativeAmount, companyAmount, rate) {
+        const currencyId = relationId(currency);
+        if (!currencyId) return;
+        this.update({
+            change_currency_id: currencyId,
+            change_amount_currency: Number(nativeAmount || 0),
+            change_amount_company: Number(companyAmount || 0),
+            change_exchange_rate: Number(rate || 1),
+        });
+    },
+});

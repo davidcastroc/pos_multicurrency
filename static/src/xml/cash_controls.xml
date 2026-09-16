@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+  <t t-inherit="point_of_sale.OpeningControlPopup" t-inherit-mode="extension">
+    <xpath expr="//div[contains(@class, 'opening-notes-container')]" position="before">
+      <section t-if="pos.config.enable_pos_multicurrency and mcOpening.ready and mcOpeningOtherRows().length" class="ll-mc-cashbox mb-3">
+        <div class="fw-bold fs-5 mb-2">Apertura multimoneda</div>
+        <div class="text-muted mb-2">Indique cuánto efectivo físico inicia en cada moneda.</div>
+        <div t-foreach="mcOpeningOtherRows()" t-as="row" t-key="row.currency_id" class="ll-mc-cash-row">
+          <div><strong t-esc="row.name"/><small class="d-block text-muted">Tasa apertura: <t t-esc="row.opening_rate"/></small></div>
+          <div class="input-group"><span class="input-group-text" t-esc="row.symbol || row.name"/><input class="form-control" type="number" min="0" step="0.01" t-model="row.input"/></div>
+        </div>
+      </section>
+    </xpath>
+  </t>
+
+  <t t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension">
+    <xpath expr="//div[contains(@class, 'notes-container')]" position="before">
+      <section t-if="pos.config.enable_pos_multicurrency and mcClosing.ready and mcClosingOtherRows().length" class="ll-mc-cashbox mt-3">
+        <div class="fw-bold fs-5 mb-2">Arqueo físico por moneda</div>
+        <div class="text-muted mb-3">Cada moneda cuadra por separado. El equivalente contable no oculta diferencias físicas.</div>
+        <div t-foreach="mcClosingOtherRows()" t-as="row" t-key="row.currency_id" class="ll-mc-close-row">
+          <div class="ll-mc-close-head"><strong t-esc="row.name"/><strong t-esc="mcFmt(row, row.expected)"/></div>
+          <div class="ll-mc-close-detail"><span>Apertura</span><span t-esc="mcFmt(row, row.opening_amount)"/></div>
+          <div class="ll-mc-close-detail"><span>Recibido efectivo</span><span t-esc="mcFmt(row, row.received)"/></div>
+          <div class="ll-mc-close-detail"><span>Vuelto entregado</span><span t-esc="mcFmt(row, row.change)"/></div>
+          <div class="ll-mc-close-detail" t-if="row.cash_in"><span>Entradas</span><span t-esc="mcFmt(row, row.cash_in)"/></div>
+          <div class="ll-mc-close-detail" t-if="row.cash_out"><span>Salidas</span><span t-esc="mcFmt(row, row.cash_out)"/></div>
+          <label class="form-label mt-2">Contado en <t t-esc="row.name"/></label>
+          <div class="input-group"><span class="input-group-text" t-esc="row.symbol || row.name"/><input class="form-control" type="number" min="0" step="0.01" t-model="row.input"/></div>
+          <div class="ll-mc-close-detail mt-2" t-att-class="{'text-danger fw-bold': Math.abs(mcDifference(row)) > 0.00001}"><span>Diferencia</span><span t-esc="mcFmt(row, mcDifference(row))"/></div>
+        </div>
+      </section>
+    </xpath>
+  </t>
+</templates>
