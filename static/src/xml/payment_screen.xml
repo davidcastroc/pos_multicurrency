@@ -1,38 +1,131 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-  <t t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension">
-    <xpath expr="//div[contains(@class, 'center-content')]//t[@t-call='point_of_sale.PaymentScreenDue']" position="after"><t t-call="pos_multicurrency.MulticurrencyPanel"/></xpath>
-    <xpath expr="//t[@t-if='ui.isSmall']/div/t[@t-call='point_of_sale.PaymentScreenDue']" position="after"><t t-call="pos_multicurrency.MulticurrencyPanel"/></xpath>
-  </t>
 
-  <t t-name="pos_multicurrency.MulticurrencyPanel">
-    <section t-if="mcState.enabled and mcState.ready" class="ll-mc-card bg-view rounded-3 p-3">
-      <div class="ll-mc-header"><div><div class="ll-mc-kicker">POS MULTIMONEDA</div><div class="ll-mc-title">Cobro en moneda física</div></div>
-        <span class="ll-mc-rate" t-if="isForeignPaymentSelected()">1 <t t-esc="selectedMethodCurrency().name"/> = <t t-esc="env.utils.formatCurrency(selectedMethodCurrency().company_per_unit)"/></span>
-      </div>
-      <div t-if="isForeignPaymentSelected()" class="ll-mc-payment-grid mt-3">
-        <div class="ll-mc-field"><label>Monto recibido en <t t-esc="selectedMethodCurrency().name"/></label>
-          <div class="ll-mc-input-wrap"><span t-esc="selectedMethodCurrency().symbol"/><input type="number" min="0" step="0.01" t-att-value="mcState.foreignAmount" t-on-input="onForeignAmountInput" t-on-keydown="onForeignAmountKeydown"/></div>
-        </div>
-        <button class="btn btn-primary ll-mc-apply" t-on-click="applyForeignPayment"><i class="fa fa-check-circle me-2"/>Aplicar pago</button>
-        <div class="ll-mc-due">Pendiente: <strong t-esc="formatForeign(selectedMethodCurrency(), dueInCurrency(selectedMethodCurrency()))"/></div>
-      </div>
-      <div t-if="currentChangeCompany() &gt; 0" class="ll-mc-change mt-3">
-        <div class="ll-mc-change-title">Vuelto físico</div><div class="ll-mc-currency-buttons">
-          <button t-foreach="mcState.currencies" t-as="currency" t-key="currency.id" class="btn ll-mc-currency" t-att-class="mcState.changeCurrencyId === currency.id ? 'btn-primary active' : 'btn-light'" t-on-click="() => chooseChangeCurrency(currency.id)">
-            <span class="ll-mc-symbol" t-esc="currency.symbol"/><span t-esc="currency.name"/><strong t-esc="formatForeign(currency, currentChangeCompany() / currency.company_per_unit)"/>
-          </button>
-        </div>
-      </div>
-    </section>
-  </t>
+    <t t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'total')]" position="replace">
+            <div class="total text-center py-2 py-lg-3 text-success">
+                <t t-if="mcState.enabled and mcState.ready and mcOrderContext().isNative">
+                    <div class="ll-mc-payment-main-total">
+                        <t t-esc="mcOrderTotalDisplay()"/>
+                    </div>
+                    <div class="ll-mc-payment-subtotal">
+                        Impuestos: <strong t-esc="mcOrderTaxDisplay()"/>
+                        <span class="mx-2">·</span>
+                        Equivalente contable:
+                        <strong t-esc="mcOrderCompanyEquivalentDisplay()"/>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-esc="this.env.utils.formatCurrency(currentOrder.getTotalDue())"/>
+                </t>
+            </div>
+        </xpath>
+    </t>
 
-  <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
-    <xpath expr="//*[contains(@class, 'info-list')]" position="inside">
-      <li t-if="line.multicurrencyPrice" class="price-per-unit ll-mc-line-price">
-        <span class="ll-native-badge">PRECIO NATIVO</span> <strong t-esc="line.multicurrencyPrice"/>
-        <small t-if="line.companyEquivalent" class="d-block opacity-75">Equivalente contable: <t t-esc="line.companyEquivalent"/></small>
-      </li>
-    </xpath>
-  </t>
+    <t t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'center-content')]//t[@t-call='point_of_sale.PaymentScreenDue']"
+               position="after">
+            <t t-call="pos_multicurrency.MulticurrencyPaymentPanel"/>
+        </xpath>
+        <xpath expr="//t[@t-if='ui.isSmall']//t[@t-call='point_of_sale.PaymentScreenDue']"
+               position="after">
+            <t t-call="pos_multicurrency.MulticurrencyPaymentPanel"/>
+        </xpath>
+    </t>
+
+    <t t-inherit="point_of_sale.PaymentScreenMethods" t-inherit-mode="extension">
+        <xpath expr="//span[contains(@class, 'payment-name')]" position="after">
+            <span t-if="mcState.enabled and mcState.ready"
+                  class="ll-mc-method-badge"
+                  t-esc="mcMethodBadge(paymentMethod)"/>
+        </xpath>
+    </t>
+
+    <t t-name="pos_multicurrency.MulticurrencyPaymentPanel">
+        <section t-if="mcShowPanel()" class="ll-mc-card bg-view rounded-3 p-3">
+
+            <div class="ll-mc-header">
+                <div>
+                    <div class="ll-mc-kicker">LA LEONA · POS MULTIMONEDA</div>
+                    <div class="ll-mc-title">Conversión y cobro</div>
+                </div>
+                <div class="text-end">
+                    <div class="ll-mc-rate-source">Tipo de cambio BCCR de hoy</div>
+                    <strong t-if="mcState.rateDate"><t t-esc="mcRateDisplay()"/></strong>
+                    <small t-if="mcState.rateDate">Fecha: <t t-esc="mcState.rateDate"/></small>
+                </div>
+            </div>
+
+            <div class="ll-mc-conversion-summary mt-3">
+                <div>
+                    <span>Total de venta</span>
+                    <strong t-esc="mcOrderTotalDisplay()"/>
+                </div>
+                <div t-if="selectedPaymentLine">
+                    <span>Pagar con</span>
+                    <strong>
+                        <t t-esc="mcSelectedMethod()?.name"/>
+                        ·
+                        <t t-esc="mcSelectedMethodCurrency()?.name"/>
+                    </strong>
+                </div>
+                <div t-if="selectedPaymentLine">
+                    <span>Tipo de cambio</span>
+                    <strong t-esc="mcRateDisplay()"/>
+                </div>
+                <div t-if="selectedPaymentLine">
+                    <span>Monto equivalente a pagar</span>
+                    <strong t-esc="mcTenderDueDisplay()"/>
+                </div>
+            </div>
+
+            <div t-if="selectedPaymentLine" class="ll-mc-payment-grid mt-3">
+                <div class="ll-mc-field">
+                    <label>
+                        Monto recibido en
+                        <t t-esc="mcSelectedMethodCurrency()?.name"/>
+                    </label>
+                    <div class="ll-mc-input-wrap">
+                        <span t-esc="mcSelectedMethodCurrency()?.symbol"/>
+                        <input type="number"
+                               min="0"
+                               step="0.01"
+                               t-att-value="mcState.tenderAmount"
+                               t-on-input="mcOnTenderInput"
+                               t-on-keydown="mcOnTenderKeydown"/>
+                    </div>
+                    <small>
+                        Equivalente contable:
+                        <strong t-esc="mcAppliedEquivalentDisplay()"/>
+                    </small>
+                </div>
+
+                <button class="btn btn-primary ll-mc-apply"
+                        t-on-click="mcApplyTender">
+                    <i class="fa fa-check-circle me-2"/>
+                    Aplicar monto
+                </button>
+            </div>
+
+            <div t-if="mcCurrentChangeCompany() &gt; 0" class="ll-mc-change mt-3">
+                <div class="ll-mc-change-title">
+                    Vuelto: elegí la moneda física
+                </div>
+                <div class="ll-mc-currency-buttons">
+                    <button t-foreach="mcState.currencies"
+                            t-as="currency"
+                            t-key="currency.id"
+                            class="btn ll-mc-currency"
+                            t-att-class="mcState.changeCurrencyId === currency.id ? 'btn-primary active' : 'btn-light'"
+                            t-on-click="() => this.mcChooseChangeCurrency(currency.id)">
+                        <span class="ll-mc-symbol" t-esc="currency.symbol"/>
+                        <span t-esc="currency.name"/>
+                        <strong t-esc="mcChangeDisplay(currency.id)"/>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </t>
+
 </templates>

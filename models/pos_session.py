@@ -20,6 +20,9 @@ class PosSession(models.Model):
         if currency == company_currency:
             return 1.0
         config = self.config_id
+        config._ensure_exchange_rates(silent=True, force=False)
+        if company_currency.name == "CRC" and currency.name == "USD" and config.mc_usd_sell_rate > 0:
+            return config.mc_usd_sell_rate
         if config.exchange_rate_source == "manual":
             line = config.currency_rate_ids.filtered(lambda r: r.currency_id == currency)[:1]
             if not line:
@@ -53,32 +56,55 @@ class PosSession(models.Model):
         config = self.env["pos.config"].browse(config_id).exists()
         if not config:
             raise UserError(_("No se encontró la configuración del Punto de Venta."))
+
+        config._ensure_exchange_rates(silent=True, force=False)
         company = config.company_id
         company_currency = company.currency_id
         currencies = config.allowed_currency_ids | company_currency
-        manual = {line.currency_id.id: line.company_per_unit for line in config.currency_rate_ids}
+        manual = {line.currency_id.id: line for line in config.currency_rate_ids}
         date = fields.Date.context_today(self)
         values = []
+
         for currency in currencies:
             if currency == company_currency:
-                rate = 1.0
+                generic = buy = sell = 1.0
+            elif company_currency.name == "CRC" and currency.name == "USD" and config.mc_usd_buy_rate > 0 and config.mc_usd_sell_rate > 0:
+                generic = config.mc_usd_sell_rate
+                buy = config.mc_usd_buy_rate
+                sell = config.mc_usd_sell_rate
             elif config.exchange_rate_source == "manual":
-                rate = manual.get(currency.id)
-                if not rate:
+                line = manual.get(currency.id)
+                if not line:
                     raise UserError(_("Falta la tasa manual para %s.") % currency.display_name)
+                generic = line.company_per_unit
+                buy = line.company_per_unit_buy or generic
+                sell = line.company_per_unit_sell or generic
             else:
-                rate = currency._convert(1.0, company_currency, company, date, round=False)
+                generic = currency._convert(1.0, company_currency, company, date, round=False)
+                buy = sell = generic
+
             values.append({
-                "id": currency.id, "name": currency.name, "symbol": currency.symbol,
-                "position": currency.position, "decimal_places": currency.decimal_places,
-                "company_per_unit": rate, "is_company_currency": currency == company_currency,
+                "id": currency.id,
+                "name": currency.name,
+                "symbol": currency.symbol,
+                "position": currency.position,
+                "decimal_places": currency.decimal_places,
+                "company_per_unit": generic,
+                "buy_company_per_unit": buy,
+                "sell_company_per_unit": sell,
+                "is_company_currency": currency == company_currency,
             })
+
         return {
             "enabled": config.enable_pos_multicurrency,
             "company_currency_id": company_currency.id,
             "default_change_currency_id": config.default_change_currency_id.id or company_currency.id,
             "show_native_product_prices": config.show_native_product_prices,
             "show_company_equivalent": config.show_company_equivalent,
+            "rate_source": config.mc_rate_source_label or config.exchange_rate_source,
+            "rate_date": config.mc_rate_date.isoformat() if config.mc_rate_date else False,
+            "usd_buy_rate": config.mc_usd_buy_rate,
+            "usd_sell_rate": config.mc_usd_sell_rate,
             "currencies": values,
         }
 
@@ -102,13 +128,37 @@ class PosSession(models.Model):
                 pay_currency = payment.payment_currency_id or session.company_id.currency_id
                 if pay_currency == bal.currency_id:
                     cash_received += payment.amount_currency if payment.payment_currency_id else payment.amount
-            cash_change = 0.0
+            # Odoo persists change as a negative pos.payment line. Therefore
+            # cash_received is already NET of change and must not subtract it again.
+            # We keep cash_change only as an informational breakdown for the UI.
             change_orders = self.env["pos.order"].sudo().search([
                 ("session_id", "=", session.id), ("state", "not in", ["draft", "cancel"]),
                 ("change_currency_id", "=", bal.currency_id.id),
             ])
             cash_change = sum(change_orders.mapped("change_amount_currency"))
-            expected = bal.opening_amount + cash_received - cash_change + bal.cash_in_amount - bal.cash_out_amount
+            expected = bal.opening_amount + cash_received + bal.cash_in_amount - bal.cash_out_amount
+            method_rows = []
+            methods = session.config_id.payment_method_ids.filtered(
+                lambda method: (method.payment_currency_id or session.company_id.currency_id) == bal.currency_id
+            )
+            all_payments = self.env["pos.payment"].sudo().search([
+                ("session_id", "=", session.id),
+                ("pos_order_id.state", "not in", ["draft", "cancel"]),
+                ("payment_method_id", "in", methods.ids),
+            ])
+            for method in methods.sorted(lambda m: (m.sequence if "sequence" in m._fields else 0, m.id)):
+                method_payments = all_payments.filtered(lambda p: p.payment_method_id == method)
+                native_total = sum(
+                    p.amount_currency if p.payment_currency_id else p.amount
+                    for p in method_payments
+                )
+                method_rows.append({
+                    "id": method.id,
+                    "name": method.name,
+                    "is_cash": bool(method.is_cash_count),
+                    "amount": native_total,
+                })
+
             result.append({
                 "balance_id": bal.id,
                 "currency_id": bal.currency_id.id,
@@ -125,6 +175,11 @@ class PosSession(models.Model):
                 "expected": expected,
                 "counted": bal.closing_counted_amount,
                 "difference": bal.closing_counted_amount - expected if bal.closing_counted else 0.0,
+                "methods": method_rows,
+                "rate_source": session.config_id.mc_rate_source_label or session.config_id.exchange_rate_source,
+                "rate_date": session.config_id.mc_rate_date.isoformat() if session.config_id.mc_rate_date else False,
+                "usd_buy_rate": session.config_id.mc_usd_buy_rate,
+                "usd_sell_rate": session.config_id.mc_usd_sell_rate,
             })
         return result
 

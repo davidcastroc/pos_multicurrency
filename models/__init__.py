@@ -5,3 +5,4 @@ from . import pos_order
 from . import pos_payment
 from . import pos_session
 from . import res_currency
+from . import l10n_cr_fe_bridge

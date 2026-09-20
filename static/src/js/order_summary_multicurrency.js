@@ -2,121 +2,33 @@
 
 import { patch } from "@web/core/utils/patch";
 import { OrderSummary } from "@point_of_sale/app/screens/product_screen/order_summary/order_summary";
-
-
-function relationId(value) {
-    if (!value) {
-        return false;
-    }
-
-    if (typeof value === "number") {
-        return value;
-    }
-
-    if (Array.isArray(value)) {
-        return value[0] || false;
-    }
-
-    return value.id || value.raw?.id || false;
-}
+import { mcOrderCommercialContext } from "./multicurrency_models";
 
 
 patch(OrderSummary.prototype, {
-    /**
-     * Devuelve los totales en la moneda comercial cuando todas las líneas
-     * pertenecen a una única moneda extranjera.
-     *
-     * En órdenes mixtas conserva el resumen estándar en moneda compañía.
-     */
     get multicurrencyTaxTotals() {
-        const order = this.currentOrder;
-        const standardTotals = order?.taxTotals;
+        const standard = this.currentOrder?.taxTotals;
+        const context = mcOrderCommercialContext(this.currentOrder);
 
-        if (!standardTotals || !order?.lines?.length) {
-            return standardTotals;
-        }
+        if (!standard || !context.isNative) return standard;
 
-        const effectiveLines = order.lines.filter(
-            (line) =>
-                Number(line.qty || 0) !== 0 &&
-                !line.combo_parent_id
-        );
-
-        if (!effectiveLines.length) {
-            return standardTotals;
-        }
-
-        const nativeLines = effectiveLines.filter(
-            (line) =>
-                relationId(line.sale_currency_id) &&
-                Number(line.foreign_unit_price || 0) > 0 &&
-                Number(line.exchange_rate_snapshot || 0) > 0
-        );
-
-        // Hay productos normales CRC mezclados con productos extranjeros.
-        if (nativeLines.length !== effectiveLines.length) {
-            return standardTotals;
-        }
-
-        const currencyIds = new Set(
-            nativeLines.map((line) =>
-                relationId(line.sale_currency_id)
-            )
-        );
-
-        // Hay más de una moneda comercial en la misma orden.
-        if (currencyIds.size !== 1) {
-            return standardTotals;
-        }
-
-        const currencyId = [...currencyIds][0];
-
-        /*
-         * Usamos un promedio ponderado para contemplar líneas que puedan
-         * tener snapshots distintos del tipo de cambio.
-         */
-        let nativeUntaxedTotal = 0;
-        let companyUntaxedTotal = 0;
-
-        for (const line of nativeLines) {
-            const nativeSubtotal = Number(
-                line.foreign_subtotal || 0
-            );
-
-            const rate = Number(
-                line.exchange_rate_snapshot || 0
-            );
-
-            nativeUntaxedTotal += nativeSubtotal;
-            companyUntaxedTotal += nativeSubtotal * rate;
-        }
-
-        const effectiveRate =
-            nativeUntaxedTotal > 0
-                ? companyUntaxedTotal / nativeUntaxedTotal
-                : 0;
-
-        if (!(effectiveRate > 0)) {
-            return standardTotals;
-        }
+        const convert = (value) => Number(value || 0) / context.rate;
 
         return {
-            ...standardTotals,
-
-            // Hace que OrderWidget use el símbolo y decimales de USD.
-            currency_id: currencyId,
-
-            // Impuesto expresado en moneda comercial.
-            tax_amount_currency:
-                Number(
-                    standardTotals.tax_amount_currency || 0
-                ) / effectiveRate,
-
-            // Total con impuestos expresado en moneda comercial.
-            order_total:
-                Number(
-                    standardTotals.order_total || 0
-                ) / effectiveRate,
+            ...standard,
+            currency_id: context.currencyId,
+            tax_amount_currency: convert(standard.tax_amount_currency),
+            order_total: convert(standard.order_total),
+            order_rounding: convert(standard.order_rounding),
+            subtotals: (standard.subtotals || []).map((subtotal) => ({
+                ...subtotal,
+                base_amount_currency: convert(subtotal.base_amount_currency),
+                tax_groups: (subtotal.tax_groups || []).map((group) => ({
+                    ...group,
+                    base_amount_currency: convert(group.base_amount_currency),
+                    tax_amount_currency: convert(group.tax_amount_currency),
+                })),
+            })),
         };
     },
 });

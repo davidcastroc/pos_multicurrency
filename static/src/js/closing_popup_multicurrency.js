@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { ClosePosPopup } from "@point_of_sale/app/components/popups/closing_popup/closing_popup";
+import { ClosePosPopup } from "@point_of_sale/app/navbar/closing_popup/closing_popup";
 
 // Keep the native component untouched except for accepting the backend payload.
 // The XML consumes pre-formatted strings directly, so it does not depend on

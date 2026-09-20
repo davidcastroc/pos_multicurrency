@@ -1,33 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <record id="pos_config_form_multicurrency" model="ir.ui.view">
-    <field name="name">pos.config.form.multicurrency</field>
-    <field name="model">pos.config</field>
-    <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
-    <field name="arch" type="xml">
-      <xpath expr="//div[hasclass('o_settings_container')]" position="inside">
-        <div class="col-12 col-lg-6 o_setting_box" id="pos_multicurrency_settings">
-          <div class="o_setting_left_pane"><field name="enable_pos_multicurrency"/></div>
-          <div class="o_setting_right_pane">
-            <label for="enable_pos_multicurrency" string="POS multimoneda global"/>
-            <div class="text-muted">Precios nativos, cobros mixtos, vuelto y arqueo por moneda.</div>
-            <div class="content-group mt16" invisible="not enable_pos_multicurrency">
-              <field name="allowed_currency_ids" widget="many2many_tags" options="{'no_create': True}"/>
-              <field name="default_change_currency_id" options="{'no_create': True}"/>
-              <field name="exchange_rate_source"/>
-              <field name="currency_rate_ids" invisible="exchange_rate_source != 'manual'">
-                <list editable="bottom">
-                  <field name="currency_id" options="{'no_create': True}"/>
-                  <field name="company_per_unit"/>
-                </list>
-              </field>
-              <field name="show_native_product_prices"/>
-              <field name="show_company_equivalent"/>
-              <button name="action_install_cr_payment_methods" type="object" string="Crear/asignar métodos de pago Costa Rica" class="btn btn-primary mt16"/>
-            </div>
-          </div>
-        </div>
-      </xpath>
-    </field>
-  </record>
+    <record id="pos_config_form_multicurrency" model="ir.ui.view">
+        <field name="name">pos.config.form.multicurrency</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('o_settings_container')]" position="inside">
+                <div class="col-12 col-lg-6 o_setting_box" id="pos_multicurrency_settings">
+                    <div class="o_setting_left_pane">
+                        <field name="enable_pos_multicurrency"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="enable_pos_multicurrency" string="POS multimoneda PRO"/>
+                        <div class="text-muted">
+                            Precios nativos, cobros CRC/USD, SINPE, conversión,
+                            vuelto y arqueo por moneda.
+                        </div>
+
+                        <div class="content-group mt16" invisible="not enable_pos_multicurrency">
+                            <button name="action_install_cr_payment_methods"
+                                    type="object"
+                                    string="Crear/actualizar métodos de pago CR"
+                                    class="btn-primary mb-2"/>
+                            <field name="allowed_currency_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="default_change_currency_id"
+                                   options="{'no_create': True}"/>
+                            <field name="exchange_rate_source"/>
+
+                            <group string="Banco Central de Costa Rica"
+                                   invisible="exchange_rate_source != 'bccr'">
+                                <field name="bccr_user_name"/>
+                                <field name="bccr_email"/>
+                                <field name="bccr_token" password="True"/>
+                                <field name="bccr_buy_indicator"/>
+                                <field name="bccr_sell_indicator"/>
+                                <button name="action_refresh_exchange_rates"
+                                        type="object"
+                                        string="Actualizar BCCR ahora"
+                                        class="btn-secondary"/>
+                            </group>
+
+                            <field name="currency_rate_ids"
+                                   invisible="exchange_rate_source != 'manual'">
+                                <list editable="bottom">
+                                    <field name="currency_id" options="{'no_create': True}"/>
+                                    <field name="company_per_unit"/>
+                                    <field name="company_per_unit_buy"/>
+                                    <field name="company_per_unit_sell"/>
+                                </list>
+                            </field>
+
+                            <group string="Tipo de cambio activo">
+                                <field name="mc_usd_buy_rate" readonly="1"/>
+                                <field name="mc_usd_sell_rate" readonly="1"/>
+                                <field name="mc_rate_date" readonly="1"/>
+                                <field name="mc_rate_source_label" readonly="1"/>
+                            </group>
+
+                            <field name="show_native_product_prices"/>
+                            <field name="show_company_equivalent"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="pos_config_kanban_multicurrency_rate" model="ir.ui.view">
+        <field name="name">pos.config.kanban.multicurrency.rate</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_config_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="inside">
+                <field name="enable_pos_multicurrency"/>
+                <field name="mc_usd_buy_rate"/>
+                <field name="mc_usd_sell_rate"/>
+                <field name="mc_rate_date"/>
+                <field name="mc_rate_source_label"/>
+            </xpath>
+            <xpath expr="//t[@t-name='card']" position="inside">
+                <div t-if="record.enable_pos_multicurrency.raw_value" class="mt-2 pt-2 border-top small">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Tipo de cambio de hoy</span>
+                        <strong>1 USD = ₡ <field name="mc_usd_sell_rate"/></strong>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                        <field name="mc_rate_source_label"/> · <field name="mc_rate_date"/>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
