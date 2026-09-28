@@ -164,9 +164,19 @@ patch(PaymentScreen.prototype, {
 
     mcTenderDue(currency = this.mcSelectedMethodCurrency()) {
         if (!currency) return 0;
-        const companyDue = Math.max(Number(this.currentOrder.get_due() || 0), 0);
+
+        // IMPORTANT:
+        // get_due() is negative for POS refunds. Do not clamp it to zero:
+        // the sign must reach the payment line so Odoo registers an
+        // outgoing/refund payment instead of a zero payment.
+        const companyDue = Number(this.currentOrder.get_due() || 0);
         const info = this.mcPaymentRate(currency);
+
         return info.rate > 0 ? companyDue / info.rate : 0;
+    },
+
+    mcIsRefund() {
+        return Number(this.currentOrder?.get_total_with_tax?.() || 0) < 0;
     },
 
     mcTenderDueDisplay() {
@@ -244,10 +254,25 @@ patch(PaymentScreen.prototype, {
             String(this.mcState.tenderAmount || "").replace(",", ".")
         );
 
-        if (!line || !currency || !(amount >= 0)) {
+        const isRefund = this.mcIsRefund();
+
+        // Sales require a positive tender.
+        // Refunds require a negative tender.
+        // Zero and non-numeric values are never valid.
+        const invalidAmount =
+            !Number.isFinite(amount) ||
+            amount === 0 ||
+            (!isRefund && amount < 0) ||
+            (isRefund && amount > 0);
+
+        if (!line || !currency || invalidAmount) {
             this.dialog.add(AlertDialog, {
                 title: _t("Monto inválido"),
-                body: _t("Ingrese un monto válido."),
+                body: _t(
+                    isRefund
+                        ? "Para un reembolso ingrese un monto negativo."
+                        : "Ingrese un monto positivo válido."
+                ),
             });
             return;
         }
@@ -281,7 +306,7 @@ patch(PaymentScreen.prototype, {
         const amount = Number(
             String(this.mcState.tenderAmount || "0").replace(",", ".")
         );
-        if (!currency || !(amount >= 0)) return "";
+        if (!currency || !Number.isFinite(amount)) return "";
         const rate = this.mcPaymentRate(currency).rate;
         return this.env.utils.formatCurrency(amount * rate);
     },

@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 {
     "name": "La Leona | POS Multimoneda PRO",
-    "version": "18.0.2.2.1",
+    "version": "18.0.2.3.0",
     "summary": "Precios nativos USD/CRC, BCCR, cobros físicos, vuelto seleccionable y cierres multimoneda.",
     "category": "Point of Sale",
     "author": "Castro Li",
     "website": "https://castrolicr.com",
     "license": "LGPL-3",
-    "depends": ["point_of_sale", "stock", "account", "l10n_cr_currency_rate_live", "l10n_cr_invoice_pos"],
+    "depends": [
+        "point_of_sale",
+        "sale",
+        "stock",
+        "account",
+        "l10n_cr_currency_rate_live",
+        "l10n_cr_invoice_pos",
+    ],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_cron.xml",

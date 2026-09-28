@@ -47,7 +47,10 @@
             <div class="ll-mc-header">
                 <div>
                     <div class="ll-mc-kicker">LA LEONA · POS MULTIMONEDA</div>
-                    <div class="ll-mc-title">Conversión y cobro</div>
+                    <div class="ll-mc-title">
+                        <t t-if="mcIsRefund()">Conversión y reembolso</t>
+                        <t t-else="">Conversión y cobro</t>
+                    </div>
                 </div>
                 <div class="text-end">
                     <div class="ll-mc-rate-source">Tipo de cambio BCCR de hoy</div>
@@ -58,11 +61,17 @@
 
             <div class="ll-mc-conversion-summary mt-3">
                 <div>
-                    <span>Total de venta</span>
+                    <span>
+                        <t t-if="mcIsRefund()">Total a reembolsar</t>
+                        <t t-else="">Total de venta</t>
+                    </span>
                     <strong t-esc="mcOrderTotalDisplay()"/>
                 </div>
                 <div t-if="selectedPaymentLine">
-                    <span>Pagar con</span>
+                    <span>
+                        <t t-if="mcIsRefund()">Reembolsar con</t>
+                        <t t-else="">Pagar con</t>
+                    </span>
                     <strong>
                         <t t-esc="mcSelectedMethod()?.name"/>
                         ·
@@ -74,7 +83,10 @@
                     <strong t-esc="mcRateDisplay()"/>
                 </div>
                 <div t-if="selectedPaymentLine">
-                    <span>Monto equivalente a pagar</span>
+                    <span>
+                        <t t-if="mcIsRefund()">Monto equivalente a reembolsar</t>
+                        <t t-else="">Monto equivalente a pagar</t>
+                    </span>
                     <strong t-esc="mcTenderDueDisplay()"/>
                 </div>
             </div>
@@ -82,13 +94,13 @@
             <div t-if="selectedPaymentLine" class="ll-mc-payment-grid mt-3">
                 <div class="ll-mc-field">
                     <label>
-                        Monto recibido en
+                        <t t-if="mcIsRefund()">Monto a reembolsar en </t>
+                        <t t-else="">Monto recibido en </t>
                         <t t-esc="mcSelectedMethodCurrency()?.name"/>
                     </label>
                     <div class="ll-mc-input-wrap">
                         <span t-esc="mcSelectedMethodCurrency()?.symbol"/>
                         <input type="number"
-                               min="0"
                                step="0.01"
                                t-att-value="mcState.tenderAmount"
                                t-on-input="mcOnTenderInput"
@@ -103,7 +115,8 @@
                 <button class="btn btn-primary ll-mc-apply"
                         t-on-click="mcApplyTender">
                     <i class="fa fa-check-circle me-2"/>
-                    Aplicar monto
+                    <t t-if="mcIsRefund()">Aplicar reembolso</t>
+                    <t t-else="">Aplicar monto</t>
                 </button>
             </div>
 

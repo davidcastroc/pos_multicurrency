@@ -167,7 +167,10 @@ export function mcOrderCommercialContext(order) {
         companyBase += nativeSubtotal * rate;
     }
 
-    const rate = nativeBase > 0 ? companyBase / nativeBase : 0;
+    // Refund lines make both nativeBase and companyBase negative.
+    // Their quotient is still the correct positive exchange rate.
+    // Only reject a zero native base.
+    const rate = nativeBase !== 0 ? companyBase / nativeBase : 0;
     if (!(rate > 0)) return { isNative: false };
 
     const companyTotal = Number(order.get_total_with_tax?.() || 0);
