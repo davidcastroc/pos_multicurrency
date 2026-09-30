@@ -346,12 +346,13 @@ patch(PosOrderline.prototype, {
             Number(this.qty || 0) *
             (1 - Number(this.discount || 0) / 100);
 
+        /*
+         * Orderline valida estrictamente el shape de getDisplayData().
+         * Usamos únicamente las propiedades estándar de Odoo para mostrar
+         * el precio comercial en su moneda nativa.
+         */
         data.price = mcFormatCurrency(currency, subtotal);
         data.unitPrice = mcFormatCurrency(currency, unit);
-        data.multicurrencyPrice = mcFormatCurrency(currency, unit);
-        data.multicurrencySubtotal = mcFormatCurrency(currency, subtotal);
-        data.nativeCurrencyName = currency.name || currency.raw?.name || "";
-        data.nativeCurrencySymbol = currency.symbol || currency.raw?.symbol || "";
         return data;
     },
 });
