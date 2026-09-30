@@ -256,11 +256,18 @@ patch(PosOrderline.prototype, {
             exchange_rate_snapshot: rate,
         });
 
-        const desiredCompanyTotal = nativeUnit * rate;
-        const desiredCompanyPrice = mcTaxExcludedCompanyUnitForIncludedTarget(
-            this,
-            desiredCompanyTotal
-        );
+        /*
+         * El precio comercial nativo representa el price_unit comercial
+         * del producto. Si el impuesto es price_include=True, Odoo debe
+         * recibir el precio completo y separar internamente base + impuesto.
+         *
+         * Ejemplo:
+         *   $30 x 450 = CRC 13,500 como price_unit
+         *
+         * Odoo calcula después:
+         *   base + IVA incluido = CRC 13,500
+         */
+        const desiredCompanyPrice = nativeUnit * rate;
 
         if (desiredCompanyPrice > 0) {
             this.set_unit_price(desiredCompanyPrice);
@@ -304,10 +311,13 @@ patch(PosOrderline.prototype, {
         const nativeUnit = this._mcNativeUnitPrice();
 
         if (native.enabled && nativeUnit > 0 && rate > 0) {
-            const companyUnit = mcTaxExcludedCompanyUnitForIncludedTarget(
-                this,
-                nativeUnit * rate
-            );
+            /*
+             * Igual que en setup(): price_unit conserva el precio comercial
+             * completo convertido a moneda contable. El motor fiscal del POS
+             * determina base e impuesto según price_include del impuesto.
+             */
+            const companyUnit = nativeUnit * rate;
+
             if (companyUnit > 0) {
                 this.set_unit_price(companyUnit);
             }

@@ -27,6 +27,7 @@
     "assets": {
         "point_of_sale._assets_pos": [
             "pos_multicurrency/static/src/js/multicurrency_models.js",
+            "pos_multicurrency/static/src/js/sale_order_multicurrency.js",
             "pos_multicurrency/static/src/js/order_summary_multicurrency.js",
             "pos_multicurrency/static/src/js/payment_screen.js",
             "pos_multicurrency/static/src/js/cash_controls.js",
